@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Bootstrap Example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.6.1/firebase-firestore.js"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <br><br>
+        <form id="addEmail">
+            <div class="row">
+                <div class="col-sm-6"><input type="email" class="form-control" required placeholder="Enter email"
+                        id="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"></div>
+                <div class="col-sm-2"><button type="submit" class="btn btn-primary" onclick="">OTP</button></div>
+                <div class="col-sm-3"><input type="text" class="form-control" id="otp" readonly></div>
+
+            </div>
+
+
+
+        </form>
+        <br>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Sl.</th>
+                    <th>Email</th>
+                    <th>OTP</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableData">
+                <tr>
+                    <td>
+                        <div class="spinner-border text-primary"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script type="text/javascript">
+        firebase.initializeApp({
+            apiKey: 'AIzaSyCZgqQjdwZnLHuFErUOX4BiDzGMstSYpog',
+            // authDomain: '### FIREBASE AUTH DOMAIN ###',
+            projectId: 'test-6702b'
+        });
+
+        var db = firebase.firestore();
+        getdata();
+        setInterval(getdata, 60000);
+        emailList = [];
+        function getdata() {
+        document.getElementById("tableData").innerHTML=`<tr><td><div class="spinner-border text-primary"></div></td></tr>`;
+            row = '';
+            sl = 1;
+             emailList = [];
+            db.collection("users").orderBy("date", "asc").get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+
+                    c = new Date(doc.data().date.toDate())
+                    d = Math.floor(((new Date).getTime() - c.getTime())) / 1000;
+                    if (d > 60) {
+                        deleteEmail(doc.id);
+                    } else {
+                    emailList.push(doc.data().email);
+                        row += `<tr><td>${sl++}</td><td>${doc.data().email}</td><td>${doc.data().otp}</td><td><button type="button" class="btn btn-link" onclick="deleteEmail('${doc.id}');">deleted</button></td></tr>`
+                    }
+                });
+                document.getElementById("tableData").innerHTML = row;
+            })
+        }
+        function deleteEmail(id) {
+            db.collection("users").doc(id).delete().then(function () {
+                console.log("Document successfully deleted!");
+            }).catch(function (error) {
+                console.error("Error removing document: ", error);
+            });
+            getdata();
+        }
+        $(document).ready(function (e) {
+            $("#addEmail").on('submit', (function (e) {
+  e.preventDefault();
+
+            if( emailList.indexOf(document.getElementById("email").value)!=-1){
+            alert("duplicate email !!")
+return
+            }
+                otp = Math.floor(1000 + Math.random() * 9000);
+                document.getElementById("otp").value = otp
+               
+                db.collection("users").add({
+                    email: document.getElementById("email").value,
+                    otp: otp,
+                    date: new Date()
+                })
+                    .then(function (docRef) {
+                        console.log("Document written with ID: ", docRef.id);
+                        alert("success")
+                        getdata();
+                        return
+                    })
+                    .catch(function (error) {
+                        console.error("Error adding document: ", error);
+                        alert("Error adding document")
+                    });
+            }));
+        });
+
+    </script>
+
+</body>
+
+</html>
